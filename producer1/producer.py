@@ -4,31 +4,27 @@ import time
 import sys
 import os
 
-# Получаем значение MSize из переменных окружения
-MSize = int(os.getenv('MSize', 4))  # Значение по умолчанию = 4, если переменная не установлена
+MSize = int(os.getenv('MSize', 4))
 def send_messages_to_broker(PDtype):
-    broker_url = 'http://consumer:8080'  # consumer - это имя сервиса в docker-compose.yml
+    broker_url = 'http://consumer:8080'
     i = 0
-    while i < MSize ** 2:  # Отправляем MSize * MSize сообщений
+    while i < MSize ** 2:
         if i % 100 == 0:
             print(f"Sending message {i}...")
         try:
-            # Формируем данные для отправки
             data = {
                 'message_type': PDtype,
                 'message_content': random.randint(1, 1000),
             }
             response = requests.post(broker_url, json=data)
 
-            # Проверяем корректность ответа
             if response.status_code != 200:
                 print(f"Received invalid response: {response.status_code}, {response.text}")
                 continue
 
-            # Если получен ответ "-520", повторяем отправку
             while response.text == "-520":
                 print("Received -520, retrying...")
-                time.sleep(1)  # Ждем перед повторной попыткой
+                time.sleep(1)
                 response = requests.post(broker_url, json=data)
 
             i += 1
@@ -37,7 +33,6 @@ def send_messages_to_broker(PDtype):
             time.sleep(1)
 
     try:
-        # Отправка сигнала об окончании передачи данных
         data = {
             'message_type': PDtype,
             'message_content': -1,
@@ -53,7 +48,6 @@ def send_messages_to_broker(PDtype):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        # Получаем аргумент с типом продюсера
         try:
             arg = int(sys.argv[1])
             if arg not in [1, 2]:
